@@ -9,3 +9,5 @@
 6. 当J/B型指令发生跳转时将清空D阶段之前的流水线
 
 会继续更新和完善，可能添加的功能有动态分支预测和cache模块
+
+本设计参考了 https://github.com/lvyufeng/step_into_mips 中的基本架构，在此表达感谢！
