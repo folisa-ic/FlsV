@@ -1,0 +1,136 @@
+// 常规测试（已通过）
+
+main:
+addi x2, x0, 5
+addi x3, x0, 12
+addi x7, x3, -9
+or x4, x7, x2
+and x5, x3, x4
+add x5, x5, x4
+beq x5, x7, end
+slt x4, x3, x4
+beq x4, x0, around
+addi x5, x0, 0
+
+around:
+slt x4, x7, x2
+add x7, x4, x5
+sub x7, x7, x2
+sw x7, 68(x3)
+lw x2, 80(x0)
+j end
+addi x2, x0, 1
+
+end:
+sw x2, 84(x0)
+
+00    0x00500113	addi x2 x0 5	addi x2, x0, 5
+04    0x00c00193	addi x3 x0 12	addi x3, x0, 12
+08    0xff718393	addi x7 x3 -9	addi x7, x3, -9
+0c    0x0023e233	or x4 x7 x2	    or x4, x7, x2
+10    0x0041f2b3	and x5 x3 x4	and x5, x3, x4
+14    0x004282b3	add x5 x5 x4	add x5, x5, x4
+18    0x02728663	beq x5 x7 44	beq x5, x7, end
+1c    0x0041a233	slt x4 x3 x4	slt x4, x3, x4
+20    0x00020463	beq x4 x0 8	    beq x4, x0, around
+24    0x00000293	addi x5 x0 0	addi x5, x0, 0
+28    0x0023a233	slt x4 x7 x2	slt x4, x7, x2
+2c    0x005203b3	add x7 x4 x5	add x7, x4, x5
+30    0x402383b3	sub x7 x7 x2	sub x7, x7, x2
+34    0x0471a223	sw x7 68(x3)	sw x7, 68(x3)
+38    0x05002103	lw x2 80(x0)	lw x2, 80(x0)
+3c    0x0080006f	jal x0 8	    j end
+40    0x00100113	addi x2 x0 1	addi x2, x0, 1
+44    0x04202a23	sw x2 84(x0)	sw x2, 84(x0)
+
+
+// JAL/LUI测试版（已通过）
+00    0x00500113	addi x2 x0 5	addi x2, x0, 5
+04    0x00c00193	addi x3 x0 12	addi x3, x0, 12
+08    0xff718393	addi x7 x3 -9	addi x7, x3, -9
+0c    0x0023e233	or x4 x7 x2	    or x4, x7, x2
+10    0x0041f2b3	and x5 x3 x4	and x5, x3, x4
+14    0x004282b3	add x5 x5 x4	add x5, x5, x4
+18    0x02728663	beq x5 x7 44	beq x5, x7, end
+1c    0x0041a233	slt x4 x3 x4	slt x4, x3, x4
+20    0x00020463	beq x4 x0 8	    beq x4, x0, around
+24    0x00000293	addi x5 x0 0	addi x5, x0, 0
+28    0x0023a233	slt x4 x7 x2	slt x4, x7, x2
+2c    0x005203b3	add x7 x4 x5	add x7, x4, x5
+30    0x402383b3	sub x7 x7 x2	sub x7, x7, x2
+34    0x0471a223	sw x7 68(x3)	sw x7, 68(x3)
+38    0x05002103	lw x2 80(x0)	lw x2, 80(x0)
+3c    0x0080056f	jal x10 8	    jal x10 end         // 跳转的同时将0x40赋值给x10
+40    0x00100113	addi x2 x0 1	addi x2, x0, 1
+44    0x04202a23	sw x2 84(x0)	sw x2, 84(x0)
+48    0x00001137	lui x2 1	    lui x2 1            // 将4096赋值给x2
+
+
+// 抗压测试1.0（已通过）
+
+main:
+addi x2 x0 5
+addi x8 x0 6
+sw x2 80(x0)    
+sw x8 60(x0)    
+lw x3 80(x0)    
+add x4 x2 x3    // 数据冒险，流水线暂停一周期后执行计算
+
+beq x7 x8 end   // 不跳转
+sub x7 x4 x2
+beq x7 x3 end   // 跳转（伴随E阶段数据前推至D阶段，在执行过后清空D阶段之前的流水线，下一周期 instr_D 为 32'b0 ）
+addi x2 x0 0
+addi x8 x0 0
+
+end:
+addi x2 x0 26
+addi x8 x0 27
+nop
+
+00    0x00500113	addi x2 x0 5	addi x2 x0 5
+04    0x00600413	addi x8 x0 6	addi x8 x0 6
+08    0x04202823	sw x2 80(x0)	sw x2 80(x0)
+0c    0x02802e23	sw x8 60(x0)	sw x8 60(x0)
+10    0x05002183	lw x3 80(x0)	lw x3 80(x0)
+14    0x00310233	add x4 x2 x3	add x4 x2 x3
+18    0x00838863	beq x7 x8 16	beq x7 x8 end  
+1c    0x402203b3	sub x7 x4 x2	sub x7 x4 x2
+20    0x00338663	beq x7 x3 12	beq x7 x3 end
+24    0x00000113	addi x2 x0 0	addi x2 x0 0
+28    0x00000413	addi x8 x0 0	addi x8 x0 0
+2c    0x01a00113	addi x2 x0 26	addi x2 x0 26
+30    0x01b00413	addi x8 x0 27	addi x8 x0 27
+34    0x00000013	addi x0 x0 0	nop
+
+// 抗压测试2.0（已通过）
+
+main:
+addi x2 x0 5
+sw x2 80(x0)        
+lw x3 80(x0)    
+addi x4 x3 0    
+beq x2 x3 end   // 数据冒险，流水线暂停一周期后执行D阶段的判断，
+                // 值得注意的是，x3会在D阶段的下降沿写入regfile，从而触发 equal_D,进而改变 pc_inst_ram_F 
+                // 在执行过后清空D阶段之前的流水线，下一周期 instr_D 为 32'b0 
+add x2 x3 x2 
+addi x2 x0 0
+addi x3 x0 0
+
+end:
+addi x2 x0 26
+addi x3 x0 27
+nop
+
+
+00    0x00500113	addi x2 x0 5	addi x2 x0 5
+04    0x04202823	sw x2 80(x0)	sw x2 80(x0)
+08    0x05002183	lw x3 80(x0)	lw x3 80(x0)
+0c    0x00018213	addi x4 x3 0	addi x4 x3 0
+10    0x00310863	beq x2 x3 16	beq x2 x3 end
+14    0x00218133	add x2 x3 x2	add x2 x3 x2
+18    0x00000113	addi x2 x0 0	addi x2 x0 0
+1c    0x00000193	addi x3 x0 0	addi x3 x0 0
+20    0x01a00113	addi x2 x0 26	addi x2 x0 26
+24    0x01b00193	addi x3 x0 27	addi x3 x0 27
+28    0x00000013	addi x0 x0 0	nop
+
