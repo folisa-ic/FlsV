@@ -20,18 +20,18 @@ module top(
 
     wire inst_ram_ena_F;                        // inst_ram使能 Fetch
     wire data_ram_ena_M;                        // data_ram使能 Memory
-    wire data_ram_wea_M;                        // data_ram写使�? Memory
+    wire data_ram_wea_M;                        // data_ram写使能 Memory
     wire [31:0] pc_inst_ram_F;                  // 
     wire [31:0] pc_word_F;                      // inst_ram地址输入 Fetch
     wire [31:0] instr_F;                        // inst_ram指令输出 Fetch
     wire [31:0] instr_F_initial;                // 最初的inst_ram指令输出
     reg  [31:0] instr_F_delay;                  // instr_F_initial延迟一拍
-    wire [31:0] alu_result_M;                   // data_ram取其�?部分作为地址输入 Memory
-    wire [31:0] mem_wdata_M;                    // data_ram写输�? Memory
-    wire [31:0] mem_rdata_M;                    // data_ram读输�? Memory 
+    wire [31:0] alu_result_M;                   // data_ram取其低位部分作为地址输入 Memory
+    wire [31:0] mem_wdata_M;                    // data_ram写输入Memory
+    wire [31:0] mem_rdata_M;                    // data_ram读输入Memory 
   
     wire stall_instr_F;
-    assign pc_word_F = {2'b0, pc_inst_ram_F[31:2]};      // 由于inst_ram按word寻址，故�?要将�?终结果右�?
+    assign pc_word_F = {2'b0, pc_inst_ram_F[31:2]};      // 由于inst_ram按word寻址，故需要将最终结果右移
 
 
     //mips_core
@@ -54,8 +54,8 @@ module top(
       .clka             (clk),      
       .ena              (inst_ram_ena_F),         
       .wea              (4'b0),                 // inst_ram只读不写，写使能置零  
-      .addra            (pc_word_F[7:0]),       // 取pc_word_F的低8位作为指令地�?
-      .dina             (32'b0),                // inst_ram只读不写，写入数据无�?    
+      .addra            (pc_word_F[7:0]),       // 取pc_word_F的低8位作为指令地址
+      .dina             (32'b0),                // inst_ram只读不写，写入数据无效    
       .douta            (instr_F_initial)       // 指令ram输出32-bit指令
     );
 
@@ -86,7 +86,7 @@ module top(
     data_ram            uut_data_ram (
       .clka             (clk),    
       .ena              (data_ram_ena_M),      
-      .wea              ({4{data_ram_wea_M}}),  // 4-bit对应4个byte的输入写使能，均�?1可写�?个word
+      .wea              ({4{data_ram_wea_M}}),  // 4-bit对应4个byte的输入写使能，均为1可写4个word
       .addra            (alu_result_M[9:0]),    // alu_result[9:0]作为MEM地址
       .dina             (mem_wdata_M),          // 作为store指令写入MEM中的数据
       .douta            (mem_rdata_M)           // 作为load指令读取的MEM中的数据
