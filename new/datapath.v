@@ -55,13 +55,13 @@ module datapath(
     input   [31:0]  instr_F,         
     input   [31:0]  mem_rdata_M,      
     output  [31:0]  pc_inst_ram_F, 
-    output  [31:0]  alu_result_M,   //已修改
+    output  [31:0]  alu_result_M,   
     output  [31:0]  mem_wdata_M,
     output  stall_instr_F,
     output  stall_PC,
     output  stall_F_to_D,
     output  flush_D_to_E,
-    output  [1:0]   pcsrc_D               // 从pc_plus4、pc_branch和pc_jump中选出作为pc_next_0，pcsrc_D[1]为0时清空F_to_D流水线reg
+    output  [1:0]   pcsrc_D         // 从pc_plus4、pc_branch和pc_jump中选出作为pc_next_0，pcsrc_D[1]为0时清空F_to_D流水线reg
     );
 
     // 在Execute阶段生成的信号，作为Decode阶段的输入，需要声明在Decode模块之前
@@ -69,21 +69,21 @@ module datapath(
 
     // 在Writeback阶段生成的信号，作为Decode阶段的输入，需要声明在Decode模块之前
     wire [4:0]  rd_W;
-    wire [31:0] wd3_W;            // 从mem_rdata和alu_result中选出作为写回regfile的数据
+    wire [31:0] wd3_W;              // 从mem_rdata和alu_result中选出作为写回regfile的数据
     wire [31:0] pc_branch_D;
     wire [31:0] pc_jump_D;
 
     //////////////////////////////////////////////////////////////////////////
     // Fetch
     wire [31:0] pc_F;               // 顺序读取的指令地址
-    wire [31:0] pc_plus4_F;       // inst_ram中的下一条指令地址
-    // wire [31:0] instr_ls2_F;      // 左移2位的instr，通常用于jump指令  
-    // wire [31:0] pc_next_F;        // 下一条指令地址   
+    wire [31:0] pc_plus4_F;         // inst_ram中的下一条指令地址
+    // wire [31:0] instr_ls2_F;     // 左移2位的instr，通常用于jump指令  
+    // wire [31:0] pc_next_F;       // 下一条指令地址   
 
-    pc              uut_pc(       // 待修改
+    pc              uut_pc(       
       .clk          (clk),
       .rst          (rst),
-      .en           (~stall_PC),   // 暂停流水线信号，高电平有效故取反
+      .en           (~stall_PC),    // 暂停流水线信号，高电平有效故取反
       .din          (pc_plus4_F),
       .q            (pc_F)
     );
@@ -110,21 +110,21 @@ module datapath(
 
     wire [31:0] instr_D;
     wire [31:0] pc_inst_ram_D; 
-    wire [31:0] pc_inst_ram_E;               // branch和jump指令需要用到 
-    wire [31:0] pc_inst_ram_plus4_D;         // JAL指令需要用到 
+    wire [31:0] pc_inst_ram_E;            // branch和jump指令需要用到 
+    wire [31:0] pc_inst_ram_plus4_D;      // JAL指令需要用到 
     wire [4:0]  rs1_D, rs2_D, rd_D;
-    wire [31:0] rd1_D;              // 从regfile读取的rs1
-    wire [31:0] rd2_D;              // 从regfile读取的rs2
+    wire [31:0] rd1_D;                    // 从regfile读取的rs1
+    wire [31:0] rd2_D;                    // 从regfile读取的rs2
     wire [31:0] imm_extend_Itype_D;       // Itype指令中被扩展后的imm
     wire [31:0] imm_extend_Stype_D;       // Stype指令中被扩展后的imm
     wire [31:0] imm_extend_Btype_D;       // Btype指令中被扩展后的imm
     wire [31:0] imm_extend_Utype_D;       // Utype指令中被扩展后的imm
     wire [31:0] imm_extend_Jtype_D;       // Jtype指令中被扩展后的imm
 
-    // wire [31:0] imm_extend_ls2_D;   // 被扩展后并左移2位的imm，通常用于branch指令
+    // wire [31:0] imm_extend_ls2_D;      // 被扩展后并左移2位的imm，通常用于branch指令
     wire [31:0] eq_srcA_D;
     wire [31:0] eq_srcB_D;
-    wire        equal_D;            // 判断条件分支跳转指令是否发生
+    wire        equal_D;                  // 判断条件分支跳转指令是否发生
     wire [1:0]  forwardA_D;
     wire [1:0]  forwardB_D;
 
@@ -183,29 +183,29 @@ module datapath(
 
     //对I-type指令的imm进行符号扩展
     signed_extend #(12)   uut_signed_extend_Itype_D(
-      .a                  (instr_D[31:20]),             // imm
-      .y                  (imm_extend_Itype_D)               // 被符号扩展后的32-bit imm
+      .a                  (instr_D[31:20]),                   // imm
+      .y                  (imm_extend_Itype_D)                // 被符号扩展后的32-bit imm
     );
 
     //对S-type指令的imm进行符号扩展
     signed_extend #(12)   uut_signed_extend_Stype_D(
-      .a                  ({instr_D[31:25], instr_D[11:7]}),             // imm
-      .y                  (imm_extend_Stype_D)               // 被符号扩展后的32-bit imm
+      .a                  ({instr_D[31:25], instr_D[11:7]}),  // imm
+      .y                  (imm_extend_Stype_D)                // 被符号扩展后的32-bit imm
     );
 
     //对B-type指令的imm进行符号扩展
     signed_extend #(13)   uut_signed_extend_Btype_D(
       .a                  ({instr_D[31], instr_D[7], instr_D[30:25], instr_D[11:8], 1'b0}),          // 不需扩展到word寻址，结尾的0已经自动扩展到half_word寻址
-      .y                  (imm_extend_Btype_D)               // 被符号扩展后的32-bit imm
+      .y                  (imm_extend_Btype_D)                // 被符号扩展后的32-bit imm
     );
 
     //对U-type指令的imm的低位进行补零
-    assign imm_extend_Utype_D = {instr_D[31:12], {12{1'b0}}};   // 注意：如果把 {12{1'b0}} 写成 {12{0}} 是错误的，必须写明位数，否则整个 imm_extend_Utype_D 都是0
+    assign imm_extend_Utype_D = {instr_D[31:12], {12{1'b0}}}; // 注意：如果把 {12{1'b0}} 写成 {12{0}} 是错误的，必须写明位数，否则整个 imm_extend_Utype_D 都是0
 
     //对J-type指令的imm的低位进行补零并符号扩展
     signed_extend #(21)   uut_signed_extend_Jtype_D(
       .a                  ({instr_D[31], instr_D[19:12], instr_D[20], instr_D[30:25], instr_D[24:21], 1'b0}),          // 不需扩展到word寻址，结尾的0已经自动扩展到half_word寻址
-      .y                  (imm_extend_Jtype_D)               // 被符号扩展后的32-bit imm
+      .y                  (imm_extend_Jtype_D)                // 被符号扩展后的32-bit imm
     );
 
     //pc_branch_D
@@ -604,17 +604,5 @@ module datapath(
       .s            (wd3_src),     
       .y            (wd3_W)
     );
-
-    /*
-    mux_2 #(32)     uut_mux_2_regfile_wd3(
-      .a            (mem_rdata_M),     
-      .b            (alu_result_W),
-      .s            (memtoreg_W),     
-      .y            (wd3_W)
-    );
-    */
-
-    //////////////////////////////////////////////////////////////////////////
-    // end
 
 endmodule

@@ -1,6 +1,5 @@
 `timescale 1ns / 1ps
 
-//视频中的alucontrol疑似有误，本文件依照正常alu结构完成
 module alu(
     input   [31:0] a,
     input   [31:0] b,
@@ -24,6 +23,6 @@ module alu(
     end
 
     assign zero = (s == 32'b0);
-    assign overflow = 1'b0;     //待后续判断是否溢出
+    assign overflow = 1'b0;         //待后续判断是否溢出
 
 endmodule

@@ -16,6 +16,6 @@ module pc(
             q <= 32'b0;
         else if(en)
             q <= din;
-        else ;               //q <= 32'b0;     需要被注释，阻塞保持原数据一个周期
+        else ;              
     end
 endmodule

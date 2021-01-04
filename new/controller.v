@@ -1,13 +1,13 @@
 `timescale 1ns / 1ps
 
-//jump_D          是否为jump指令
-//regwrite      是否需要写寄存器文件
+//jump_D            是否为jump指令
+//regwrite          是否需要写寄存器文件
 //load_imm_E        是否为U-type
-//alusrc        ALU的B端口选择Imm(1) or Regfile(0)
-//branch_D        是否为branch指令，且满足branch条件
-//memwrite      是否要写数据存储器
-//memtoreg      回写数字是否来自MEM(1) or ALU(0)
-//memen         data_ram使能
+//alusrc            ALU的B端口选择Imm(1) or Regfile(0)
+//branch_D          是否为branch指令，且满足branch条件
+//memwrite          是否要写数据存储器
+//memtoreg          回写数字是否来自MEM(1) or ALU(0)
+//memen             data_ram使能
 
 //如果要从MIPS迁移至RISCV则本模块需要大改
 //对指令的操作要从原本的op+funct改为op+funct7+funct3的模式，操作位也需要变化
@@ -38,15 +38,15 @@ module controller(
     wire [1:0] sigs_W;
 
     main_dec            uut_main_dec(
-        .op             (instr_D[6:0]),   // main_dec输入 Decode
-        .sigs           (sigs_D),          // main_dec输出，各级控制信号 Decode
+        .op             (instr_D[6:0]),     // main_dec输入 Decode
+        .sigs           (sigs_D),           // main_dec输出，各级控制信号 Decode
         .immcontrol     (immcontrol_D)
     );
 
     alu_dec             uut_alu_dec(
         .op             (instr_D[6:0]),  
-        .funct_7        (instr_D[31:25]),     // alu_dec输入 Decode
-        .funct_3        (instr_D[14:12]),          // alu_dec输入 Decode
+        .funct_7        (instr_D[31:25]),   // alu_dec输入 Decode
+        .funct_3        (instr_D[14:12]),   // alu_dec输入 Decode
         .alucontrol     (alucontrol_D)      // alu_dec输出 ALU控制信号 Decode
     );
     
@@ -129,14 +129,14 @@ module main_dec(
     // immcontrol = 100: J-type
     
     //jump_D, regwrite, load_imm_E, alusrc, branch_D, memwrite, memtoreg, memen
-    //jump_D          是否为jump指令
-    //regwrite      是否需要写寄存器文件
+    //jump_D            是否为jump指令
+    //regwrite          是否需要写寄存器文件
     //load_imm_E        是否为U型指令
-    //alusrc        ALU的B端口选择Imm(1) or Regfile(0)
-    //branch_D        是否为branch指令，且满足branch条件
-    //memwrite      是否要写数据存储器
-    //memtoreg      回写数字是否来自MEM(1) or ALU(0)
-    //memen         data_ram使能
+    //alusrc            ALU的B端口选择Imm(1) or Regfile(0)
+    //branch_D          是否为branch指令，且满足branch条件
+    //memwrite          是否要写数据存储器
+    //memtoreg          回写数字是否来自MEM(1) or ALU(0)
+    //memen             data_ram使能
     always@(*)
     begin
         case (op)
