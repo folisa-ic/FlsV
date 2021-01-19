@@ -35,7 +35,7 @@ module top(
     assign pc_word_F = {2'b0, pc_inst_ram_F[31:2]};      // 由于inst_ram按word寻址，故需要将最终结果右移
 
 
-    //mips_core
+    //RSICV_core
     RISC_V              uut_RISC_V(
       .clk              (clk),
       .rst              (rst),
