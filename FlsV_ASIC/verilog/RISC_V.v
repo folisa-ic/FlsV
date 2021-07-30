@@ -17,7 +17,7 @@ module RISC_V(
     );
 
     //考虑程序一直处于运行状态，inst_ram使能信号始终为1，但是初始化时为了不传递未知的地址信号到inst_ram，需设置复位
-    always@(posedge clk or negedge rst)
+    always@(posedge clk or posedge rst)
     begin
         if(rst)
             inst_ram_ena_F <= 0;

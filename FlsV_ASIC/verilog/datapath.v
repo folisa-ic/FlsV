@@ -351,7 +351,7 @@ module datapath(
       .d               (pc_inst_ram_plus4_D),
       .q               (pc_inst_ram_plus4_E)
     );
-    flopenrc #(32)     uut_jump_E(
+    flopenrc #(1)      uut_jump_E(
       .clk             (clk),
       .rst             (rst),
       .clear           (1'b0),
@@ -496,7 +496,7 @@ module datapath(
       .d               (pc_inst_ram_plus4_E),
       .q               (pc_inst_ram_plus4_M)
     );
-    flopenrc #(32)     uut_jump_M(
+    flopenrc #(1)      uut_jump_M(
       .clk             (clk),
       .rst             (rst),
       .clear           (1'b0),
@@ -504,7 +504,7 @@ module datapath(
       .d               (jump_E),
       .q               (jump_M)
     );
-    flopenrc #(32)     uut_load_imm_M(
+    flopenrc #(1)      uut_load_imm_M(
       .clk             (clk),
       .rst             (rst),
       .clear           (1'b0),
@@ -555,7 +555,7 @@ module datapath(
       .d               (pc_inst_ram_plus4_M),
       .q               (pc_inst_ram_plus4_W)
     );
-    flopenrc #(32)     uut_jump_W(
+    flopenrc #(1)      uut_jump_W(
       .clk             (clk),
       .rst             (rst),
       .clear           (1'b0),
@@ -563,7 +563,7 @@ module datapath(
       .d               (jump_M),
       .q               (jump_W)
     );
-    flopenrc #(32)     uut_load_imm_W(
+    flopenrc #(1)      uut_load_imm_W(
       .clk             (clk),
       .rst             (rst),
       .clear           (1'b0),
