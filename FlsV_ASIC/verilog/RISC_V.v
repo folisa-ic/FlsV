@@ -36,19 +36,20 @@ module RISC_V(
     wire memtoreg_W;
     wire memtoreg_M;
     wire memtoreg_E;  
+    wire [2:0] sub_control_D;
     wire [31:0] instr_D;
     wire [2:0] alucontrol_E;
     wire [2:0] immcontrol_D;
     wire stall_PC;
     wire stall_F_to_D; 
     wire flush_D_to_E;
-    wire [1:0]pcsrc_D;
+    wire flush_F_to_D;
     
     //目的是将instr_D传入controller模块，其实也可以将instr_F传入后在模块内自行加入流水线reg
     flopenrc #(32)    uut_instr_D(
       .clk            (clk),
       .rst            (rst),
-      .clear          (~pcsrc_D[1]),
+      .clear          (flush_F_to_D),
       .en             (~stall_F_to_D),
       .d              (instr_F),
       .q              (instr_D)
@@ -72,13 +73,14 @@ module RISC_V(
       .memtoreg_W         (memtoreg_W),
       .memtoreg_M         (memtoreg_M),
       .memtoreg_E         (memtoreg_E),
+      .sub_control_D      (sub_control_D),
       .alucontrol_E       (alucontrol_E),
       .immcontrol_D       (immcontrol_D),
       .stall_instr_F      (stall_instr_F),
       .stall_PC           (stall_PC),
       .stall_F_to_D       (stall_F_to_D),
       .flush_D_to_E       (flush_D_to_E),
-      .pcsrc_D            (pcsrc_D)
+      .flush_F_to_D       (flush_F_to_D)
     );
 
     controller        uut_controller(
@@ -97,6 +99,7 @@ module RISC_V(
       .memtoreg_M     (memtoreg_M),
       .memtoreg_E     (memtoreg_E),
       .memen          (data_ram_ena_M),   // 此项不送入datapath，而直接作为输出送入data_ram Memory
+      .sub_control_D  (sub_control_D),
       .alucontrol_E   (alucontrol_E),
       .immcontrol_D   (immcontrol_D),
       .flush_D_to_E   (flush_D_to_E)      // 和datapath一致，在暂停流水线时清空D/E之间的pipeline_reg

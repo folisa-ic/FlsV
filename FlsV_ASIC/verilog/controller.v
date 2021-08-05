@@ -23,8 +23,9 @@ module controller(
     input   [31:0] instr_D,
     input   flush_D_to_E,
     output  jump_D, regwrite_W, regwrite_M, regwrite_E, load_imm_E, alusrc, branch_D, memwrite, memtoreg_W, memtoreg_M, memtoreg_E, memen,
-    output  [2:0] alucontrol_E,             // 用于Execute阶段的输出
-    output  [2:0] immcontrol_D              // 用于选择imm的类型，RISCV新添加
+    output  [2:0] sub_control_D,            // 用于 ALU 以外的指令的类型选择
+    output  [2:0] alucontrol_E,             // 用于 Execute 阶段的输出
+    output  [2:0] immcontrol_D              // 用于选择 imm 的类型，RISCV 新添加
     );
 
     wire [1:0] aluop_D;
@@ -53,6 +54,7 @@ module controller(
     //////////////////////////////////////////////////////////////////////////
     // Decode
     // jump_D, regwrite, load_imm_E, alusrc, branch_D, memwrite, memtoreg, memen
+    assign sub_control_D = instr_D[14:12];
     assign jump_D = sigs_D[7];                
     assign branch_D = sigs_D[3];                          
 

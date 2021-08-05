@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
-// top = RISCV_core + inst_ram + data_ram
-// Vivado 2019.1
+// top = RISC_V + sram_code + sram_data
+// VCS + Verdi/DVE
 
 // 目前完成的功能：
 // 五级流水线正常运行
@@ -11,6 +11,9 @@
 // 当Laod指令后的第二条指令为B型指令并造成数据冒险时，将暂停流水线一个周期
 // 建议编译器通过调整指令顺序或插入nop指令，避免Laod指令后的第一条指令为B型指令，本设计未考虑这种情况
 // 当J/B型指令发生跳转时将清空D阶段之前的流水线
+
+// 动态分支预测，分支历史记录表 + 分支预测状态机
+// 稳定性通过了简单测试，不确保其完备性，可以通过 `define 语句开启或解除动态分支预测的功能
 
 
 
@@ -50,19 +53,6 @@ module top(
       .stall_instr_F    (stall_instr_F)    
     );
 
-    //inst_ram
-    /*
-    inst_ram            uut_inst_ram (
-      .clka             (clk),      
-      .ena              (inst_ram_ena_F),         
-      .wea              (4'b0),                 // inst_ram只读不写，写使能置零  
-      .addra            (pc_word_F[7:0]),       // 取pc_word_F的低8位作为指令地址
-      .dina             (32'b0),                // inst_ram只读不写，写入数据无效    
-      .douta            (instr_F_initial)       // 指令ram输出32-bit指令
-    );
-    */
-
-    
     sram_code #(
       .DATA_WIDTH       (32),
       .ADDR_WIDTH       (8)
@@ -72,9 +62,6 @@ module top(
       .addr             (pc_word_F[7:0]),            
       .dout             (instr_F_initial)           
     );
-    
-
-    
 
     // 非常奇幻的设计，由于instr_F和前面不存在流水线reg所以通过常规的 flopenrc 阻塞
     // 当我们需要阻塞流水线时（目前仅在load指令后的数据冒险时需要），instr_F也需要暂停，所以引入了 instr_F_initial、instr_F_delay、hold_on_instr_F

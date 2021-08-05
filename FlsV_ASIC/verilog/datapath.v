@@ -50,6 +50,7 @@ module datapath(
     input   clk,
     input   rst,
     input   jump_D, regwrite_W, regwrite_M, regwrite_E, load_imm_E, alusrc, branch_D, memtoreg_W, memtoreg_M, memtoreg_E,
+    input   [2:0]   sub_control_D,
     input   [2:0]   alucontrol_E,
     input   [2:0]   immcontrol_D,
     input   [31:0]  instr_F,         
@@ -61,11 +62,14 @@ module datapath(
     output  stall_PC,
     output  stall_F_to_D,
     output  flush_D_to_E,
-    output  [1:0]   pcsrc_D         // 从pc_plus4、pc_branch和pc_jump中选出作为pc_next_0，pcsrc_D[1]为0时清空F_to_D流水线reg
+    output  flush_F_to_D
     );
 
     // 在Execute阶段生成的信号，作为Decode阶段的输入，需要声明在Decode模块之前
-    wire [31:0] alu_result_E;
+    wire [31:0]  alu_result_E;
+    
+    // Decode 阶段需要使用到 pc_inst_ram_E，提前声明
+    wire [31:0]  pc_inst_ram_E;            // branch 和 jump 指令需要用到 
 
     // 在Writeback阶段生成的信号，作为Decode阶段的输入，需要声明在Decode模块之前
     wire [4:0]  rd_W;
@@ -77,8 +81,22 @@ module datapath(
     // Fetch
     wire [31:0] pc_F;               // 顺序读取的指令地址
     wire [31:0] pc_plus4_F;         // inst_ram中的下一条指令地址
-    // wire [31:0] instr_ls2_F;     // 左移2位的instr，通常用于jump指令  
-    // wire [31:0] pc_next_F;       // 下一条指令地址   
+    wire [31:0] pc_branch_predict_F;// 分支预测指令地址
+    wire [31:0] pc_b_j_p_F;         // 和 pc_branch_predict_F 再次选出最终的 pc_inst_ram_F
+    wire [1:0]  pcsrc_D;            // pc_b_j_p_F 选择信号
+
+    wire        next_branch_h;      // 预测分支是否发生
+    wire        branch_F;           // 动态分支预测需要在 Fetch 阶段判断出该指令是否为分支指令
+    wire        branch_h_D;         // 表示分支指令存在并分支发生（在 D 阶段被译码后可知，提前声明）
+    wire        predict_en_F;       // 表示在 Fetch 阶段的 instr_F 为分支指令且预测分支发生
+
+
+    reg  [31:0] pc_branch_plus_4;   // 分支预测指令的下一条指令，当分支预测失败时赋值给 pc_inst_ram_F 
+    always @(posedge clk) begin
+      if(rst) pc_branch_plus_4 <= 32'b0;
+      else if(branch_h_D) pc_branch_plus_4 <= pc_inst_ram_E + 32'd4;
+      else pc_branch_plus_4 <= pc_branch_plus_4;
+    end
 
     pc              uut_pc(       
       .clk          (clk),
@@ -94,23 +112,31 @@ module datapath(
       .y            (pc_plus4_F)
     );
 
-
-
-    //mux_3 for next instruction
-    mux_3 #(32)     uut_mux_3_next_instr(
+    // mux_3 for next instruction
+    mux_4 #(32)     uut_mux_4_next_instr(
       .d0           (pc_branch_D),      // 2'b00  
       .d1           (pc_jump_D),        // 2'b01
       .d2           (pc_F),             // 2'b10
+      .d3           (pc_branch_plus_4), // 2'b11
       .s            (pcsrc_D),      
-      .y            (pc_inst_ram_F)
+      .y            (pc_b_j_p_F)        
     );
+
+    // 在 Fetch 阶段对 instr_F 判断，若为分支指令，且分支预测机预测为分支发生，则直接将 pc_branch_predict_F 赋值给 pc_inst_ram_F
+    // 故需要在 Fetch 阶段对 instr_F 进行简单的初步译码
+    assign branch_F = (instr_F[6:0] == 7'b1100011);
+    assign predict_en_F = branch_F & next_branch_h;
+    assign pc_inst_ram_F = (predict_en_F == 1'b1) ? pc_branch_predict_F : pc_b_j_p_F;
     
+
     //////////////////////////////////////////////////////////////////////////
     // Decode    
 
+    wire        predict_en_D;             // 若 F 阶段预测分支发生，则需要传递至 D 阶段挡住 pcsrc_D 的作用
+    wire        predict_correct_D;        // 当分支指令预测发生且实际上分支发生时，置 1
+    wire        predict_error_D;          // 当分支指令预测发生且实际上分支不发生时，置 1
     wire [31:0] instr_D;
     wire [31:0] pc_inst_ram_D; 
-    wire [31:0] pc_inst_ram_E;            // branch和jump指令需要用到 
     wire [31:0] pc_inst_ram_plus4_D;      // JAL指令需要用到 
     wire [4:0]  rs1_D, rs2_D, rd_D;
     wire [31:0] rd1_D;                    // 从regfile读取的rs1
@@ -124,7 +150,8 @@ module datapath(
     // wire [31:0] imm_extend_ls2_D;      // 被扩展后并左移2位的imm，通常用于branch指令
     wire [31:0] eq_srcA_D;
     wire [31:0] eq_srcB_D;
-    wire        equal_D;                  // 判断条件分支跳转指令是否发生
+    wire        equal_D;                  // 判断 BEQ 条件分支跳转指令是否发生
+    wire        not_equal_D;              // 判断 BNE 条件分支跳转指令是否发生
     wire [1:0]  forwardA_D;
     wire [1:0]  forwardB_D;
 
@@ -132,10 +159,18 @@ module datapath(
     assign rs2_D = instr_D[24:20];
     assign rd_D = instr_D[11:7];
 
+    flopenrc #(1)      uut_predict_en_D(
+      .clk             (clk),
+      .rst             (rst),
+      .clear           (flush_F_to_D),
+      .en              (~stall_F_to_D),
+      .d               (predict_en_F),
+      .q               (predict_en_D)
+    );   
     flopenrc #(32)     uut_instr_D(
       .clk             (clk),
       .rst             (rst),
-      .clear           (~pcsrc_D[1]),
+      .clear           (flush_F_to_D),
       .en              (~stall_F_to_D),
       .d               (instr_F),
       .q               (instr_D)
@@ -177,9 +212,17 @@ module datapath(
 	    .s              (forwardB_D),
 	    .y              (eq_srcB_D)
     );
+    
+    assign equal_D = (eq_srcA_D == eq_srcB_D) & (sub_control_D == 3'b000);
+    assign not_equal_D = (eq_srcA_D != eq_srcB_D) & (sub_control_D == 3'b001);
+    assign branch_h_D = (equal_D | not_equal_D) & branch_D;
+    assign predict_error_D = (branch_h_D == 1'b0) & (predict_en_D == 1'b1);
+    assign predict_correct_D = (branch_h_D == 1'b1) & (predict_en_D == 1'b1);
+    
+    assign pcsrc_D = (predict_error_D == 1'b1) ? 2'b11 : (predict_correct_D == 1'b1) ? 2'b10 : (jump_D == 1'b1) ? 2'b01 : (branch_h_D == 1'b1) ? 2'b00 : 2'b10;
+    assign flush_F_to_D = ((pcsrc_D[1] == 1'b0) | (predict_error_D == 1'b1));
 
-    assign equal_D = (eq_srcA_D == eq_srcB_D);
-    assign pcsrc_D = (equal_D & branch_D) ? 2'b00 : (jump_D == 1'b1) ? 2'b01 : 2'b10;
+    // 当进入 B_H 状态时，分支将一直发生，直到分支预测失败，此时需要仿照静态分支预测去清空流水线
 
     //对I-type指令的imm进行符号扩展
     signed_extend #(12)   uut_signed_extend_Itype_D(
@@ -604,5 +647,20 @@ module datapath(
       .s            (wd3_src),     
       .y            (wd3_W)
     );
+
+
+    //////////////////////////////////////////////////////////////////////////
+    // 动态分支预测模块
+    
+    branch_predict        uut_branch_predict(
+      .clk                (clk),
+      .rst                (rst),
+      .branch_inst        (branch_D),
+      .branch_h           (branch_h_D),
+      .pc_branch          (pc_branch_D),
+      .pc_branch_predict  (pc_branch_predict_F),
+      .next_branch_h      (next_branch_h)
+    );
+
 
 endmodule

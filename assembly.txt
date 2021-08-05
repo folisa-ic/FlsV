@@ -171,3 +171,65 @@ nop
 28    0x01b00193    addi x3 x0 27	addi x3 x0 27
 2c    0x00000013    addi x0 x0 0	nop
 
+
+// 动态分支预测模块
+// BEQ
+nop
+ADD x1, x0, x0
+ADDI x2, x0, 1
+ADDI x3, x0, 101
+
+LOOP:
+ADD x1, x1, x2
+ADDI x2, x2, 1
+BEQ x2, x3, END
+JAL x0, LOOP
+
+END:
+nop
+
+
+00    0x00000013    addi x0 x0 0    nop
+04    0x000000b3    add x1 x0 x0    ADD x1, x0, x0
+08    0x00100113    addi x2 x0 1    ADDI x2, x0, 1
+0c    0x06500193    addi x3 x0 101  ADDI x3, x0, 101
+10    0x002080b3    add x1 x1 x2    ADD x1, x1, x2
+14    0x00110113    addi x2 x2 1    ADDI x2, x2, 1
+18    0x00310463    beq x2 x3 8	    BEQ x2, x3, END
+1c    0xff5ff06f    jal x0 -12	    JAL x0, LOOP
+20    0x00000013    addi x0 x0 0    nop
+
+
+// BNE
+nop
+ADD x1, x0, x0
+ADDI x2, x0, 1
+ADDI x3, x0, 101
+
+LOOP:
+ADD x1, x1, x2
+ADDI x2, x2, 1
+BNE x2, x3, LOOP
+
+TEST:
+BEQ x2, x3, END
+ADDI x10, x0, 1
+ADDI x11, x0, 1
+ADDI x12, x0, 1
+
+END:
+ADDI x10, x0, 2
+
+
+00    0x00000013	addi x0 x0 0	nop
+04    0x000000b3	add x1 x0 x0	ADD x1, x0, x0
+08    0x00100113	addi x2 x0 1	ADDI x2, x0, 1
+0c    0x06500193	addi x3 x0 101	ADDI x3, x0, 101
+10    0x002080b3	add x1 x1 x2	ADD x1, x1, x2
+14    0x00110113	addi x2 x2 1	ADDI x2, x2, 1
+18    0xfe311ce3	bne x2 x3 -8	BNE x2, x3, LOOP
+1c    0x00310863	beq x2 x3 16	BEQ x2, x3, END
+20    0x00100513	addi x10 x0 1	ADDI x10, x0, 1
+24    0x00100593	addi x11 x0 1	ADDI x11, x0, 1
+28    0x00100613	addi x12 x0 1	ADDI x12, x0, 1
+2c    0x00200513	addi x10 x0 2	ADDI x10, x0, 2
