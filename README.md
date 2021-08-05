@@ -11,9 +11,9 @@
 8. 加入动态分支预测功能，通过简单的测试，但不确保其完备性
 
 
-提供 ASIC 和 FPGA 两种版本，其中 FlsV_ASIC 使用 SRAM 作为存储，FlsV_FPGA 使用 BRAM 作为存储 
-FlsV_ASIC 加入了动态分支预测的功能，可以在 branch_predict.v 中通过 `define 语句开启或关闭该功能，FlsV_FPGA 并未加入此功能
-
-会继续更新和完善新的功能
-
+提供 ASIC 和 FPGA 两种版本，其中 FlsV_ASIC 使用 SRAM 作为存储，FlsV_FPGA 使用 BRAM 作为存储  
+FlsV_ASIC 加入了动态分支预测的功能，可以在 branch_predict.v 中通过 `define 语句开启或关闭该功能，FlsV_FPGA 并未加入此功能  
+  
+会继续更新和完善新的功能  
+  
 本设计参考了 https://github.com/lvyufeng/step_into_mips 中的基本架构，在此表达感谢！
