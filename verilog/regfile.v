@@ -1,8 +1,7 @@
-`timescale 1ns / 1ps
 
 module regfile(
     input clk,
-    input rst,
+    input rst_n,
     input we3,                  //reg写使能
     input [4:0] ra1,            //rs地址
     input [4:0] ra2,            //rt地址
@@ -14,9 +13,9 @@ module regfile(
     reg [31:0] rf[31:0];        //32维寄存器数组模拟寄存器文件
     integer i;
 
-    always@(negedge clk)        //测试下降沿写入，调整时序，避免数据冒险
+    always @(negedge clk or negedge rst_n)        //测试下降沿写入，调整时序，避免数据冒险
     begin
-        if(rst)
+        if(!rst_n)
         begin
             //寄存器数组在仿真时若不初始化，则数值为未知X
             for(i = 0; i <= 31; i = i + 1)
@@ -25,7 +24,7 @@ module regfile(
             end
         end
         else if(we3)
-            rf[wa3] <= wd3;
+            rf[wa3] <= (wa3 != 0) ? wd3 : 0;
         else ;
     end
 

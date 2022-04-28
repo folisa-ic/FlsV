@@ -1,6 +1,3 @@
-`timescale 1ns / 1ps
-
-
 
 module sram_code #(
     parameter DATA_WIDTH = 32,
@@ -17,7 +14,7 @@ module sram_code #(
     reg [DATA_WIDTH-1:0] dout_reg;
 
     initial begin
-        $readmemh("code.txt", sram);
+        $readmemh("../../Presim/code.txt", sram);
     end
     
     always @(posedge clk) begin

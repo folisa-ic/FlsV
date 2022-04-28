@@ -2,16 +2,16 @@
 
 module flopenrc #(parameter WIDTH = 8)(
 	input       clk,
-    input       rst,
+    input       rst_n,
     input       en,
     input       clear,
 	input       [WIDTH-1:0] d,
 	output reg  [WIDTH-1:0] q
     );
 
-	always @(posedge clk) 
+	always @(posedge clk or negedge rst_n) 
     begin
-		if(rst) 
+		if(!rst_n) 
 			q <= 0;
 		else if(clear) 
 			q <= 0;

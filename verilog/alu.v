@@ -9,7 +9,7 @@ module alu(
     output overflow
     );
     
-    always@(*)
+    always @(*)
     begin
         case (alucontrol)
             3'b000: s = a & b;      //AND
